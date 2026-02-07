@@ -13,17 +13,76 @@ datasource db {
   provider = "postgresql"
 }
 
+enum Role {
+  STUDENT
+  TEACHER
+}
+
 model User {
-  id            String    @id
+  id            String   @id
   name          String?
   email         String?
-  emailVerified Boolean   @default(false)
+  emailVerified Boolean
   image         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime
+  updatedAt     DateTime
 
-  sessions      Session[]
-  accounts      Account[]
+  roles       UserRole[]
+  memberships ClassMember[]
+
+  sessions    Session[]
+  accounts    Account[]
+  classes     Class[]
+  classTokens ClassToken[]
+}
+
+model UserRole {
+  id     String @id @default(cuid())
+  userId String
+  role   Role
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, role])
+}
+
+model Class {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  createdById String
+  createdAt   DateTime @default(now())
+
+  createdBy User @relation(fields: [createdById], references: [id])
+
+  members ClassMember[]
+  tokens  ClassToken[]
+}
+
+model ClassMember {
+  id      String @id @default(cuid())
+  userId  String
+  classId String
+  role    Role // STUDENT or TEACHER (inside the class)
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  class Class @relation(fields: [classId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, classId])
+}
+
+model ClassToken {
+  id        String    @id @default(cuid())
+  token     String    @unique
+  classId   String
+  role      Role      @default(STUDENT)
+  expiresAt DateTime?
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  createdBy String
+
+  class   Class @relation(fields: [classId], references: [id], onDelete: Cascade)
+  creator User  @relation(fields: [createdBy], references: [id])
 }
 
 model Session {
@@ -43,24 +102,24 @@ model Session {
 }
 
 model Account {
-  id                     String   @id
-  userId                 String
-  accountId              String
-  providerId             String
-  accessToken            String?
-  refreshToken           String?
-  accessTokenExpiresAt   DateTime?
-  refreshTokenExpiresAt  DateTime?
-  scope                  String?
-  idToken                String?
-  password               String?
-  createdAt              DateTime @default(now())
-  updatedAt              DateTime @updatedAt
+  id                    String    @id
+  userId                String
+  accountId             String
+  providerId            String
+  accessToken           String?
+  refreshToken          String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  idToken               String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId])
   @@unique([providerId, accountId])
+  @@index([userId])
 }
 
 model Verification {
