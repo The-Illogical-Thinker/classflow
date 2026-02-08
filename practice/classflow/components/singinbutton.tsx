@@ -10,9 +10,9 @@ const signin = async () => await authClient.signIn.social({
 });
 
 export default function SigninButton({ className }: {
-    className: string
+    className?: string
 }) {
-    return <button className={className} onClick={() => signin()}>
+    return <button className={`${className} cursor-pointer`} onClick={() => signin()}>
         <div>
             Sign In
         </div>
